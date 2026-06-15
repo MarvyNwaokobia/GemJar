@@ -4,6 +4,8 @@ export const prizePoolAbi = parseAbi([
   "function stakeAmount() view returns (uint256)",
   "function savingsRateBps() view returns (uint256)",
   "function currentRound() view returns (uint256)",
+  "function totalPool(uint256 roundId) view returns (uint256)",
+  "function totalScore(uint256 roundId) view returns (uint256)",
   "function stakesOf(uint256 roundId, address player) view returns (uint256)",
   "function scoreSubmissionsOf(uint256 roundId, address player) view returns (uint256)",
   "function claimedOf(uint256 roundId, address player) view returns (bool)",
@@ -11,6 +13,7 @@ export const prizePoolAbi = parseAbi([
   "function stake()",
   "function submitScore(uint256 score)",
   "function claim(uint256 roundId)",
+  "event ScoreSubmitted(address indexed player, uint256 indexed roundId, uint256 score)",
 ]);
 
 export const savingsJarAbi = parseAbi([

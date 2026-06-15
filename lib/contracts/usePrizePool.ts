@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAccount, useReadContracts } from "wagmi";
 import { prizePoolAbi } from "@/lib/celo/abi";
 import { getGemJarContracts } from "@/lib/celo/contracts";
@@ -7,6 +8,7 @@ import { useFeeCurrency } from "./useStakeToken";
 import { useTxStatus } from "./useTxStatus";
 
 const REFETCH_INTERVAL_MS = 15_000;
+const ROUND_DURATION_MS = 24 * 60 * 60 * 1000;
 
 export function usePrizePoolAddress() {
   const { chainId } = useAccount();
@@ -35,6 +37,32 @@ export function usePrizePoolConfig() {
     stakeAmount: stakeAmount?.result,
     savingsRateBps: savingsRateBps?.result,
     currentRound: currentRound?.result,
+    isLoading,
+    refetch,
+  };
+}
+
+/** Pool-wide totals for a given round - how much is staked and how it's split by score. */
+export function usePrizePoolRoundStats(roundId: bigint | undefined) {
+  const address = usePrizePoolAddress();
+
+  const enabled = !!address && roundId !== undefined;
+
+  const { data, isLoading, refetch } = useReadContracts({
+    contracts: enabled
+      ? [
+          { address, abi: prizePoolAbi, functionName: "totalPool", args: [roundId] },
+          { address, abi: prizePoolAbi, functionName: "totalScore", args: [roundId] },
+        ]
+      : [],
+    query: { enabled, refetchInterval: REFETCH_INTERVAL_MS },
+  });
+
+  const [totalPool, totalScore] = data ?? [];
+
+  return {
+    totalPool: totalPool?.result ?? 0n,
+    totalScore: totalScore?.result ?? 0n,
     isLoading,
     refetch,
   };
@@ -69,6 +97,21 @@ export function usePrizePoolEntry(roundId: bigint | undefined) {
     isLoading,
     refetch,
   };
+}
+
+/** Milliseconds remaining until `roundId` ends, ticking down every second. */
+export function useRoundCountdown(roundId: bigint | undefined) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (roundId === undefined) return undefined;
+
+  const roundEndMs = (Number(roundId) + 1) * ROUND_DURATION_MS;
+  return Math.max(0, roundEndMs - now);
 }
 
 /** Buys one entry into the current round for `stakeAmount` of the stake token. */

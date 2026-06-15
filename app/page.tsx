@@ -7,11 +7,19 @@ import type { BoardStateUpdate } from "@/components/game/GameBoard";
 import { GameOverModal, type OnChainSubmitStatus } from "@/components/game/GameOverModal";
 import { Hud } from "@/components/game/Hud";
 import { ClaimWinnings } from "@/components/jar/ClaimWinnings";
+import { Leaderboard } from "@/components/jar/Leaderboard";
+import { PrizePoolCard } from "@/components/jar/PrizePoolCard";
 import { SavingsJarCard } from "@/components/jar/SavingsJarCard";
 import { StakeToPlay } from "@/components/jar/StakeToPlay";
 import { WalletButton } from "@/components/wallet/WalletButton";
 import { useOnConfirmed } from "@/lib/contracts/useOnConfirmed";
-import { usePrizePoolAddress, usePrizePoolConfig, usePrizePoolEntry, useSubmitScore } from "@/lib/contracts/usePrizePool";
+import {
+  usePrizePoolAddress,
+  usePrizePoolConfig,
+  usePrizePoolEntry,
+  usePrizePoolRoundStats,
+  useSubmitScore,
+} from "@/lib/contracts/usePrizePool";
 import { STARTING_MOVES } from "@/lib/game/constants";
 import { loadGuestProgress, recordGameResult } from "@/lib/storage/guestProgress";
 
@@ -39,6 +47,7 @@ export default function HomePage() {
 
   const { stakeAmount, currentRound, refetch: refetchConfig } = usePrizePoolConfig();
   const { stakes, submissions, refetch: refetchEntry } = usePrizePoolEntry(currentRound);
+  const { totalPool } = usePrizePoolRoundStats(currentRound);
   const hasEntry = onChainEnabled && stakes > submissions;
 
   const submitScoreStatus = useSubmitScore();
@@ -117,6 +126,10 @@ export default function HomePage() {
 
       <Hud score={score} movesLeft={movesLeft} bestScore={bestScore} />
 
+      {onChainEnabled && currentRound !== undefined && stakeAmount !== undefined && (
+        <PrizePoolCard roundId={currentRound} stakeAmount={stakeAmount} totalPool={totalPool} />
+      )}
+
       {onChainEnabled && !hasEntry && prizePoolAddress && stakeAmount !== undefined && (
         <StakeToPlay prizePoolAddress={prizePoolAddress} stakeAmount={stakeAmount} onStaked={refetchEntry} />
       )}
@@ -126,6 +139,8 @@ export default function HomePage() {
       <p className="max-w-[420px] text-center font-body text-xs text-muted-foreground">
         Tap a gem, then tap a neighbor to swap. Match 3 or more of the same gem to clear them.
       </p>
+
+      {onChainEnabled && currentRound !== undefined && <Leaderboard roundId={currentRound} />}
 
       {onChainEnabled && previousRound !== undefined && <ClaimWinnings roundId={previousRound} />}
 
