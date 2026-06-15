@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { BoardStateUpdate } from "@/components/game/GameBoard";
 import { GameOverModal } from "@/components/game/GameOverModal";
 import { Hud } from "@/components/game/Hud";
+import { WalletButton } from "@/components/wallet/WalletButton";
 import { STARTING_MOVES } from "@/lib/game/constants";
 import { loadGuestProgress, recordGameResult } from "@/lib/storage/guestProgress";
 
@@ -54,6 +55,10 @@ export default function HomePage() {
 
   return (
     <main className="flex min-h-dvh flex-col items-center gap-5 px-4 py-6">
+      <div className="flex w-full max-w-[420px] justify-end">
+        <WalletButton />
+      </div>
+
       <header className="flex flex-col items-center gap-1 text-center">
         <h1 className="font-display text-3xl font-extrabold text-primary">GemJar</h1>
         <p className="font-body text-sm text-muted-foreground">

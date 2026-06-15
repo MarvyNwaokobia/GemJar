@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Nunito } from "next/font/google";
+import { WalletProvider } from "@/components/providers/WalletProvider";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -35,7 +36,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${nunito.variable} ${dmSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <WalletProvider>{children}</WalletProvider>
+      </body>
     </html>
   );
 }
