@@ -1,0 +1,9 @@
+# Compiler files
+cache/
+out/
+
+# Deployment artifacts
+broadcast/
+
+# Secrets
+.env
