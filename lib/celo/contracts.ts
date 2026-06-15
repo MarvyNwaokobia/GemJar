@@ -1,4 +1,5 @@
 import type { Address } from "viem";
+import { celoMainnet, celoSepolia } from "./chains";
 
 export interface GemJarContracts {
   prizePool: Address;
@@ -20,3 +21,14 @@ export const MAINNET_CONTRACTS: GemJarContracts = {
  * contracts are deployed there.
  */
 export const SEPOLIA_CONTRACTS: Partial<GemJarContracts> = {};
+
+/** Looks up GemJar's contract addresses for a connected chain, if deployed there. */
+export function getGemJarContracts(chainId: number | undefined): GemJarContracts | undefined {
+  if (chainId === celoMainnet.id) return MAINNET_CONTRACTS;
+  if (chainId === celoSepolia.id) {
+    return SEPOLIA_CONTRACTS.prizePool && SEPOLIA_CONTRACTS.savingsJar
+      ? (SEPOLIA_CONTRACTS as GemJarContracts)
+      : undefined;
+  }
+  return undefined;
+}

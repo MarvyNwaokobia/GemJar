@@ -1,4 +1,5 @@
 import type { Address } from "viem";
+import { celoMainnet, celoSepolia } from "./chains";
 
 export type StablecoinSymbol = "USDm" | "EURm" | "USDC" | "USDT";
 
@@ -59,3 +60,10 @@ export const PRIMARY_STAKE_TOKEN: StablecoinSymbol = "USDm";
  * testnet PrizePool/SavingsJar contracts - do not guess these addresses.
  */
 export const SEPOLIA_TOKENS: Partial<Record<StablecoinSymbol, FeeCurrencyToken>> = {};
+
+/** Looks up GemJar's stake/savings token for a connected chain, if known there. */
+export function getPrimaryStakeToken(chainId: number | undefined): FeeCurrencyToken | undefined {
+  if (chainId === celoMainnet.id) return MAINNET_TOKENS[PRIMARY_STAKE_TOKEN];
+  if (chainId === celoSepolia.id) return SEPOLIA_TOKENS[PRIMARY_STAKE_TOKEN];
+  return undefined;
+}

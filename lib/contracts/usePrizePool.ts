@@ -1,0 +1,110 @@
+"use client";
+
+import { useAccount, useReadContracts } from "wagmi";
+import { prizePoolAbi } from "@/lib/celo/abi";
+import { getGemJarContracts } from "@/lib/celo/contracts";
+import { useTxStatus } from "./useTxStatus";
+
+const REFETCH_INTERVAL_MS = 15_000;
+
+export function usePrizePoolAddress() {
+  const { chainId } = useAccount();
+  return getGemJarContracts(chainId)?.prizePool;
+}
+
+/** Round-level config and the current round id - independent of the connected account. */
+export function usePrizePoolConfig() {
+  const address = usePrizePoolAddress();
+
+  const { data, isLoading, refetch } = useReadContracts({
+    contracts: address
+      ? [
+          { address, abi: prizePoolAbi, functionName: "stakeAmount" },
+          { address, abi: prizePoolAbi, functionName: "savingsRateBps" },
+          { address, abi: prizePoolAbi, functionName: "currentRound" },
+        ]
+      : [],
+    query: { enabled: !!address, refetchInterval: REFETCH_INTERVAL_MS },
+  });
+
+  const [stakeAmount, savingsRateBps, currentRound] = data ?? [];
+
+  return {
+    address,
+    stakeAmount: stakeAmount?.result,
+    savingsRateBps: savingsRateBps?.result,
+    currentRound: currentRound?.result,
+    isLoading,
+    refetch,
+  };
+}
+
+/** The connected player's entry status for a given round. */
+export function usePrizePoolEntry(roundId: bigint | undefined) {
+  const address = usePrizePoolAddress();
+  const { address: player } = useAccount();
+
+  const enabled = !!address && !!player && roundId !== undefined;
+
+  const { data, isLoading, refetch } = useReadContracts({
+    contracts: enabled
+      ? [
+          { address, abi: prizePoolAbi, functionName: "stakesOf", args: [roundId, player] },
+          { address, abi: prizePoolAbi, functionName: "scoreSubmissionsOf", args: [roundId, player] },
+          { address, abi: prizePoolAbi, functionName: "claimedOf", args: [roundId, player] },
+          { address, abi: prizePoolAbi, functionName: "pendingPayout", args: [roundId, player] },
+        ]
+      : [],
+    query: { enabled, refetchInterval: REFETCH_INTERVAL_MS },
+  });
+
+  const [stakes, submissions, claimed, pending] = data ?? [];
+
+  return {
+    stakes: stakes?.result ?? 0n,
+    submissions: submissions?.result ?? 0n,
+    claimed: claimed?.result ?? false,
+    pendingPayout: pending?.result ?? 0n,
+    isLoading,
+    refetch,
+  };
+}
+
+/** Buys one entry into the current round for `stakeAmount` of the stake token. */
+export function useStake() {
+  const address = usePrizePoolAddress();
+  const status = useTxStatus();
+
+  function stake() {
+    if (!address) return;
+    status.writeContract({ address, abi: prizePoolAbi, functionName: "stake" });
+  }
+
+  return { stake, ...status };
+}
+
+/** Submits a game score for the current round, consuming one unused entry. */
+export function useSubmitScore() {
+  const address = usePrizePoolAddress();
+  const status = useTxStatus();
+
+  function submitScore(score: bigint) {
+    if (!address) return;
+    status.writeContract({ address, abi: prizePoolAbi, functionName: "submitScore", args: [score] });
+  }
+
+  return { submitScore, ...status };
+}
+
+/** Claims the caller's share of a finished round's pool. */
+export function useClaim() {
+  const address = usePrizePoolAddress();
+  const status = useTxStatus();
+
+  function claim(roundId: bigint) {
+    if (!address) return;
+    status.writeContract({ address, abi: prizePoolAbi, functionName: "claim", args: [roundId] });
+  }
+
+  return { claim, ...status };
+}

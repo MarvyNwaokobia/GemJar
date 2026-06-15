@@ -32,9 +32,9 @@ export const SUPPORTED_CHAINS = [celoMainnet, celoSepolia] as const;
 export type SupportedChainId = (typeof SUPPORTED_CHAINS)[number]["id"];
 
 /**
- * Defaults to Sepolia unless explicitly switched to mainnet. Set
- * NEXT_PUBLIC_CHAIN_ENV=mainnet once contracts are deployed and verified
- * on Celo Mainnet.
+ * Defaults to Mainnet, where GemJar's contracts are deployed and verified.
+ * Set NEXT_PUBLIC_CHAIN_ENV=sepolia for local testing against a Sepolia
+ * deployment once one exists.
  */
 export const DEFAULT_CHAIN =
-  process.env.NEXT_PUBLIC_CHAIN_ENV === "mainnet" ? celoMainnet : celoSepolia;
+  process.env.NEXT_PUBLIC_CHAIN_ENV === "sepolia" ? celoSepolia : celoMainnet;

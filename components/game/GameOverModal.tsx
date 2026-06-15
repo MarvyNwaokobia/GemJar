@@ -1,7 +1,10 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { PartyPopper, RotateCcw, Trophy } from "lucide-react";
+import { CircleAlert, CircleCheck, Loader2, PartyPopper, RotateCcw, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
+
+export type OnChainSubmitStatus = "none" | "pending" | "confirming" | "confirmed" | "error";
 
 interface GameOverModalProps {
   open: boolean;
@@ -9,10 +12,26 @@ interface GameOverModalProps {
   bestScore: number;
   gamesPlayed: number;
   isNewBest: boolean;
+  onChainStatus?: OnChainSubmitStatus;
   onPlayAgain: () => void;
 }
 
-export function GameOverModal({ open, score, bestScore, gamesPlayed, isNewBest, onPlayAgain }: GameOverModalProps) {
+const ON_CHAIN_STATUS_COPY: Record<Exclude<OnChainSubmitStatus, "none">, string> = {
+  pending: "Confirm in your wallet to submit this score…",
+  confirming: "Submitting your score on-chain…",
+  confirmed: "Score submitted! Check back tomorrow for your share of the pool.",
+  error: "Couldn't submit your score on-chain, but your local stats are saved.",
+};
+
+export function GameOverModal({
+  open,
+  score,
+  bestScore,
+  gamesPlayed,
+  isNewBest,
+  onChainStatus = "none",
+  onPlayAgain,
+}: GameOverModalProps) {
   return (
     <AnimatePresence>
       {open && (
@@ -56,6 +75,33 @@ export function GameOverModal({ open, score, bestScore, gamesPlayed, isNewBest, 
                 <span className="tabular font-display text-2xl font-extrabold text-foreground">{bestScore}</span>
               </div>
             </div>
+
+            {onChainStatus !== "none" && (
+              <div
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-clay-sm px-3 py-2.5 text-left",
+                  onChainStatus === "error" ? "bg-destructive/10" : "bg-primary/10",
+                )}
+              >
+                {(onChainStatus === "pending" || onChainStatus === "confirming") && (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" strokeWidth={2.5} />
+                )}
+                {onChainStatus === "confirmed" && (
+                  <CircleCheck className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.5} />
+                )}
+                {onChainStatus === "error" && (
+                  <CircleAlert className="h-4 w-4 shrink-0 text-destructive" strokeWidth={2.5} />
+                )}
+                <span
+                  className={cn(
+                    "font-body text-xs font-bold",
+                    onChainStatus === "error" ? "text-destructive" : "text-foreground",
+                  )}
+                >
+                  {ON_CHAIN_STATUS_COPY[onChainStatus]}
+                </span>
+              </div>
+            )}
 
             <button
               type="button"

@@ -1,11 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAccount } from "wagmi";
 import type { BoardStateUpdate } from "@/components/game/GameBoard";
-import { GameOverModal } from "@/components/game/GameOverModal";
+import { GameOverModal, type OnChainSubmitStatus } from "@/components/game/GameOverModal";
 import { Hud } from "@/components/game/Hud";
+import { ClaimWinnings } from "@/components/jar/ClaimWinnings";
+import { SavingsJarCard } from "@/components/jar/SavingsJarCard";
+import { StakeToPlay } from "@/components/jar/StakeToPlay";
 import { WalletButton } from "@/components/wallet/WalletButton";
+import { useOnConfirmed } from "@/lib/contracts/useOnConfirmed";
+import { usePrizePoolAddress, usePrizePoolConfig, usePrizePoolEntry, useSubmitScore } from "@/lib/contracts/usePrizePool";
 import { STARTING_MOVES } from "@/lib/game/constants";
 import { loadGuestProgress, recordGameResult } from "@/lib/storage/guestProgress";
 
@@ -27,6 +33,17 @@ export default function HomePage() {
   const [isNewBest, setIsNewBest] = useState(false);
   const [gameOver, setGameOver] = useState(false);
 
+  const { isConnected } = useAccount();
+  const prizePoolAddress = usePrizePoolAddress();
+  const onChainEnabled = isConnected && !!prizePoolAddress;
+
+  const { stakeAmount, currentRound, refetch: refetchConfig } = usePrizePoolConfig();
+  const { stakes, submissions, refetch: refetchEntry } = usePrizePoolEntry(currentRound);
+  const hasEntry = onChainEnabled && stakes > submissions;
+
+  const submitScoreStatus = useSubmitScore();
+  const submittedForGameRef = useRef<number | null>(null);
+
   // Guest progress lives in localStorage, so it can only be read once mounted on the client.
   useEffect(() => {
     const progress = loadGuestProgress();
@@ -47,11 +64,43 @@ export default function HomePage() {
     }
   }
 
+  // Submit the final score on-chain once, if the player staked an entry for this round.
+  useEffect(() => {
+    if (!gameOver || !onChainEnabled || !hasEntry) return;
+    if (submittedForGameRef.current === gameKey) return;
+    submittedForGameRef.current = gameKey;
+    submitScoreStatus.submitScore(BigInt(score));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameOver, onChainEnabled, hasEntry, gameKey, score]);
+
+  useOnConfirmed(submitScoreStatus.isConfirmed, () => {
+    refetchEntry();
+    refetchConfig();
+  });
+
+  const onChainStatus: OnChainSubmitStatus =
+    submittedForGameRef.current === gameKey && onChainEnabled
+      ? submitScoreStatus.isConfirmed
+        ? "confirmed"
+        : submitScoreStatus.isConfirming
+          ? "confirming"
+          : submitScoreStatus.isPending
+            ? "pending"
+            : submitScoreStatus.error
+              ? "error"
+              : "none"
+      : "none";
+
   function handlePlayAgain() {
     setGameOver(false);
     setIsNewBest(false);
+    submittedForGameRef.current = null;
+    submitScoreStatus.reset();
     setGameKey((key) => key + 1);
   }
+
+  const boardDisabled = gameOver || (onChainEnabled && !hasEntry);
+  const previousRound = currentRound !== undefined && currentRound > 0n ? currentRound - 1n : undefined;
 
   return (
     <main className="flex min-h-dvh flex-col items-center gap-5 px-4 py-6">
@@ -68,11 +117,19 @@ export default function HomePage() {
 
       <Hud score={score} movesLeft={movesLeft} bestScore={bestScore} />
 
-      <GameBoard gameKey={gameKey} disabled={gameOver} onStateChange={handleStateChange} />
+      {onChainEnabled && !hasEntry && prizePoolAddress && stakeAmount !== undefined && (
+        <StakeToPlay prizePoolAddress={prizePoolAddress} stakeAmount={stakeAmount} onStaked={refetchEntry} />
+      )}
+
+      <GameBoard gameKey={gameKey} disabled={boardDisabled} onStateChange={handleStateChange} />
 
       <p className="max-w-[420px] text-center font-body text-xs text-muted-foreground">
         Tap a gem, then tap a neighbor to swap. Match 3 or more of the same gem to clear them.
       </p>
+
+      {onChainEnabled && previousRound !== undefined && <ClaimWinnings roundId={previousRound} />}
+
+      {isConnected && <SavingsJarCard />}
 
       <GameOverModal
         open={gameOver}
@@ -80,6 +137,7 @@ export default function HomePage() {
         bestScore={bestScore}
         gamesPlayed={gamesPlayed}
         isNewBest={isNewBest}
+        onChainStatus={onChainStatus}
         onPlayAgain={handlePlayAgain}
       />
     </main>
