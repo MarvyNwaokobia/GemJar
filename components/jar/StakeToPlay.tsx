@@ -7,6 +7,7 @@ import { useApproveStakeToken, useStakeTokenAllowance } from "@/lib/contracts/us
 import { useOnConfirmed } from "@/lib/contracts/useOnConfirmed";
 import { useStake } from "@/lib/contracts/usePrizePool";
 import { formatTokenAmount } from "@/lib/utils/format";
+import { useIsMiniPay } from "@/lib/wallet/useIsMiniPay";
 
 interface StakeToPlayProps {
   prizePoolAddress: `0x${string}`;
@@ -18,6 +19,7 @@ export function StakeToPlay({ prizePoolAddress, stakeAmount, onStaked }: StakeTo
   const { token, balance, allowance, isLoading, refetch } = useStakeTokenAllowance(prizePoolAddress);
   const approveStatus = useApproveStakeToken();
   const stakeStatus = useStake();
+  const miniPay = useIsMiniPay();
 
   useOnConfirmed(approveStatus.isConfirmed, () => {
     refetch();
@@ -103,6 +105,12 @@ export function StakeToPlay({ prizePoolAddress, stakeAmount, onStaked }: StakeTo
       {activeStatus.error && (
         <p className="font-body text-xs font-medium text-destructive">
           {needsApproval ? "Approval" : "Stake"} failed - please try again.
+        </p>
+      )}
+
+      {miniPay && (
+        <p className="font-body text-[11px] text-muted-foreground">
+          Network fees are paid in {token.symbol} - no CELO needed.
         </p>
       )}
     </motion.div>
