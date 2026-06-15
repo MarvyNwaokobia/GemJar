@@ -1,11 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BoardStateUpdate } from "@/components/game/GameBoard";
 import { GameOverModal } from "@/components/game/GameOverModal";
 import { Hud } from "@/components/game/Hud";
 import { STARTING_MOVES } from "@/lib/game/constants";
+import { loadGuestProgress, recordGameResult } from "@/lib/storage/guestProgress";
 
 // The board's initial layout is randomized client-side, so it must never be
 // rendered during SSR (the server and client would disagree on the result).
@@ -21,19 +22,26 @@ export default function HomePage() {
   const [score, setScore] = useState(0);
   const [movesLeft, setMovesLeft] = useState(STARTING_MOVES);
   const [bestScore, setBestScore] = useState(0);
+  const [gamesPlayed, setGamesPlayed] = useState(0);
   const [isNewBest, setIsNewBest] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+
+  // Guest progress lives in localStorage, so it can only be read once mounted on the client.
+  useEffect(() => {
+    const progress = loadGuestProgress();
+    setBestScore(progress.bestScore);
+    setGamesPlayed(progress.gamesPlayed);
+  }, []);
 
   function handleStateChange({ score: nextScore, movesLeft: nextMovesLeft }: BoardStateUpdate) {
     setScore(nextScore);
     setMovesLeft(nextMovesLeft);
 
     if (nextMovesLeft === 0) {
-      setBestScore((prevBest) => {
-        const newBest = nextScore > prevBest;
-        setIsNewBest(newBest);
-        return newBest ? nextScore : prevBest;
-      });
+      setIsNewBest(nextScore > bestScore);
+      const progress = recordGameResult(nextScore);
+      setBestScore(progress.bestScore);
+      setGamesPlayed(progress.gamesPlayed);
       setGameOver(true);
     }
   }
@@ -65,6 +73,7 @@ export default function HomePage() {
         open={gameOver}
         score={score}
         bestScore={bestScore}
+        gamesPlayed={gamesPlayed}
         isNewBest={isNewBest}
         onPlayAgain={handlePlayAgain}
       />

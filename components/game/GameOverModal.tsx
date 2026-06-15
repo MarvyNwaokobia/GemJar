@@ -7,11 +7,12 @@ interface GameOverModalProps {
   open: boolean;
   score: number;
   bestScore: number;
+  gamesPlayed: number;
   isNewBest: boolean;
   onPlayAgain: () => void;
 }
 
-export function GameOverModal({ open, score, bestScore, isNewBest, onPlayAgain }: GameOverModalProps) {
+export function GameOverModal({ open, score, bestScore, gamesPlayed, isNewBest, onPlayAgain }: GameOverModalProps) {
   return (
     <AnimatePresence>
       {open && (
@@ -64,6 +65,10 @@ export function GameOverModal({ open, score, bestScore, isNewBest, onPlayAgain }
               <RotateCcw className="h-5 w-5" strokeWidth={2.5} />
               Play Again
             </button>
+
+            <p className="font-body text-xs text-muted-foreground">
+              Game #{gamesPlayed} · Progress saved on this device
+            </p>
           </motion.div>
         </motion.div>
       )}
