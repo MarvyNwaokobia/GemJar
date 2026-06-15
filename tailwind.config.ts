@@ -48,6 +48,18 @@ const config: Config = {
         "clay-pressed":
           "inset 3px 3px 6px rgba(190, 24, 93, 0.18), inset -3px -3px 6px rgba(255, 255, 255, 0.5)",
       },
+      keyframes: {
+        shake: {
+          "0%, 100%": { transform: "translateX(0)" },
+          "20%": { transform: "translateX(-6%)" },
+          "40%": { transform: "translateX(6%)" },
+          "60%": { transform: "translateX(-4%)" },
+          "80%": { transform: "translateX(4%)" },
+        },
+      },
+      animation: {
+        shake: "shake 0.3s ease-in-out",
+      },
     },
   },
   plugins: [],
