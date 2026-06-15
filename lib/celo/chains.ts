@@ -1,6 +1,11 @@
 import { defineChain } from "viem";
+import { chainConfig } from "viem/celo";
 
+// Spreading Celo's chainConfig wires up the CIP-64 formatters/serializers
+// that let writeContract calls carry a `feeCurrency`, so gas can be paid in
+// USDm instead of CELO.
 export const celoMainnet = defineChain({
+  ...chainConfig,
   id: 42220,
   name: "Celo",
   nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
@@ -15,6 +20,7 @@ export const celoMainnet = defineChain({
 });
 
 export const celoSepolia = defineChain({
+  ...chainConfig,
   id: 11142220,
   name: "Celo Sepolia",
   nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },

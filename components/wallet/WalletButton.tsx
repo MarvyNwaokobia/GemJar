@@ -5,22 +5,18 @@ import { LogOut, Smartphone, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { DEFAULT_CHAIN } from "@/lib/celo/chains";
-import { isMiniPay, truncateAddress } from "@/lib/wallet/utils";
+import { useIsMiniPay } from "@/lib/wallet/useIsMiniPay";
+import { truncateAddress } from "@/lib/wallet/utils";
 
 export function WalletButton() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [miniPay, setMiniPay] = useState(false);
+  const miniPay = useIsMiniPay();
   const { address, status, chainId } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
 
   const isConnected = status === "connected" && !!address;
-
-  // MiniPay injects its own provider, so detection only resolves after mount.
-  useEffect(() => {
-    setMiniPay(isMiniPay());
-  }, []);
 
   // Inside MiniPay there's no connect button - silently connect to the
   // injected wallet as soon as it's available.

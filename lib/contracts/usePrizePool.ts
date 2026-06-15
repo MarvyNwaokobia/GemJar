@@ -3,6 +3,7 @@
 import { useAccount, useReadContracts } from "wagmi";
 import { prizePoolAbi } from "@/lib/celo/abi";
 import { getGemJarContracts } from "@/lib/celo/contracts";
+import { useFeeCurrency } from "./useStakeToken";
 import { useTxStatus } from "./useTxStatus";
 
 const REFETCH_INTERVAL_MS = 15_000;
@@ -73,11 +74,12 @@ export function usePrizePoolEntry(roundId: bigint | undefined) {
 /** Buys one entry into the current round for `stakeAmount` of the stake token. */
 export function useStake() {
   const address = usePrizePoolAddress();
+  const feeCurrency = useFeeCurrency();
   const status = useTxStatus();
 
   function stake() {
     if (!address) return;
-    status.writeContract({ address, abi: prizePoolAbi, functionName: "stake" });
+    status.writeContract({ address, abi: prizePoolAbi, functionName: "stake", feeCurrency });
   }
 
   return { stake, ...status };
@@ -86,11 +88,12 @@ export function useStake() {
 /** Submits a game score for the current round, consuming one unused entry. */
 export function useSubmitScore() {
   const address = usePrizePoolAddress();
+  const feeCurrency = useFeeCurrency();
   const status = useTxStatus();
 
   function submitScore(score: bigint) {
     if (!address) return;
-    status.writeContract({ address, abi: prizePoolAbi, functionName: "submitScore", args: [score] });
+    status.writeContract({ address, abi: prizePoolAbi, functionName: "submitScore", args: [score], feeCurrency });
   }
 
   return { submitScore, ...status };
@@ -99,11 +102,12 @@ export function useSubmitScore() {
 /** Claims the caller's share of a finished round's pool. */
 export function useClaim() {
   const address = usePrizePoolAddress();
+  const feeCurrency = useFeeCurrency();
   const status = useTxStatus();
 
   function claim(roundId: bigint) {
     if (!address) return;
-    status.writeContract({ address, abi: prizePoolAbi, functionName: "claim", args: [roundId] });
+    status.writeContract({ address, abi: prizePoolAbi, functionName: "claim", args: [roundId], feeCurrency });
   }
 
   return { claim, ...status };

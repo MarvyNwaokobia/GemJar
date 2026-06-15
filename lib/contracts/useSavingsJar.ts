@@ -3,6 +3,7 @@
 import { useAccount, useReadContracts } from "wagmi";
 import { savingsJarAbi } from "@/lib/celo/abi";
 import { getGemJarContracts } from "@/lib/celo/contracts";
+import { useFeeCurrency } from "./useStakeToken";
 import { useTxStatus } from "./useTxStatus";
 
 const REFETCH_INTERVAL_MS = 15_000;
@@ -46,11 +47,12 @@ export function useSavingsJarSummary() {
 /** Withdraws `amount` of saved funds from the jar to the connected wallet. */
 export function useWithdrawSavings() {
   const address = useSavingsJarAddress();
+  const feeCurrency = useFeeCurrency();
   const status = useTxStatus();
 
   function withdraw(amount: bigint) {
     if (!address) return;
-    status.writeContract({ address, abi: savingsJarAbi, functionName: "withdraw", args: [amount] });
+    status.writeContract({ address, abi: savingsJarAbi, functionName: "withdraw", args: [amount], feeCurrency });
   }
 
   return { withdraw, ...status };
